@@ -1,5 +1,5 @@
 {
-  "name": "@freelancer/until-destroy",
+  "name": "@freelancercom/until-destroy",
   "version": "0.0.0",
   "description": "RxJS operator that unsubscribes when Angular component is destroyed",
   "license": "MIT",
