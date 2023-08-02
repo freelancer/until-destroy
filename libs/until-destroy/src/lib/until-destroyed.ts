@@ -1,4 +1,4 @@
-import { catchError, isEmpty, Observable, of, Subject } from 'rxjs';
+import { catchError, isEmpty, Observable, of, share, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { setupSubjectUnsubscribedChecker } from './checker';
@@ -60,9 +60,9 @@ export function untilDestroyed<T>(instance: T, destroyMethodName?: keyof T) {
     NG_DEV_MODE && setupSubjectUnsubscribedChecker(instance, destroy$);
 
     const startTime = Date.now();
-    source
+    const sharedObservable = source.pipe(takeUntil<U>(destroy$), share());
+    sharedObservable
       .pipe(
-        takeUntil<U>(destroy$),
         isEmpty(),
         catchError(_ => of(false))
       )
@@ -81,7 +81,7 @@ export function untilDestroyed<T>(instance: T, destroyMethodName?: keyof T) {
         }
       });
 
-    return source.pipe(takeUntil<U>(destroy$));
+    return sharedObservable;
   };
 }
 
