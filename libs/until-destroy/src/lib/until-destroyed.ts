@@ -1,4 +1,4 @@
-import { catchError, isEmpty, Observable, of, share, Subject } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { setupSubjectUnsubscribedChecker } from './checker';
@@ -60,28 +60,29 @@ export function untilDestroyed<T>(instance: T, destroyMethodName?: keyof T) {
     NG_DEV_MODE && setupSubjectUnsubscribedChecker(instance, destroy$);
 
     const startTime = Date.now();
-    const sharedObservable = source.pipe(takeUntil<U>(destroy$), share());
-    sharedObservable
-      .pipe(
-        isEmpty(),
-        catchError(_ => of(false))
-      )
-      .subscribe(empty => {
-        if (empty) {
-          const constructorPrototypeName = Reflect.getMetadata(
-            '__className__',
-            (instance as any).constructor.prototype
-          );
-          const endTime = Date.now();
-          console.log(
-            `Source observable is Empty. Constructor: ${
-              constructorPrototypeName ?? (instance as any).constructor.name
-            }. Timespan: ${((endTime - startTime) / 1000).toFixed(2)}s`
-          );
-        }
-      });
-
-    return sharedObservable;
+    let isEmpty = true;
+    return source.pipe(
+      takeUntil<U>(destroy$),
+      tap({
+        next: () => {
+          isEmpty = false;
+        },
+        complete: () => {
+          if (isEmpty) {
+            const constructorPrototypeName = Reflect.getMetadata(
+              '__className__',
+              (instance as any).constructor.prototype
+            );
+            const endTime = Date.now();
+            console.log(
+              `Source observable is Empty. Constructor: ${
+                constructorPrototypeName ?? (instance as any).constructor.name
+              }. Timespan: ${((endTime - startTime) / 1000).toFixed(2)}s`
+            );
+          }
+        },
+      })
+    );
   };
 }
 
